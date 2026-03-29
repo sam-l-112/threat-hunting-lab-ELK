@@ -1,0 +1,150 @@
+# =========================
+# PVs for masters
+# =========================
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-master-0
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: ""
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: /home/rocky/pv-master #你資料夾的絕對路徑
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values: ["k3s-master"] #在這裡朋友
+  claimRef:
+    namespace: default
+    name: elasticsearch-data-quickstart-es-master-node-0
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-master-1
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: ""
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: /home/rocky/pv-master #你資料夾的絕對路徑
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values: ["vm0"] #在這裡朋友
+  claimRef:
+    namespace: default
+    name: elasticsearch-data-quickstart-es-master-node-1
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-master-2
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: ""
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: /home/rocky/pv-master #你資料夾的絕對路徑
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values: ["vm1"] #在這裡朋友
+  claimRef:
+    namespace: default
+    name: elasticsearch-data-quickstart-es-master-node-2
+---
+# =========================
+# PVs for data nodes
+# =========================
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-quickstart-data-0
+spec:
+  capacity:
+    storage: 1000Gi
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: ""
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: /home/rocky/pv-data #你資料夾的絕對路徑
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values: ["k3s-master"] #在這裡朋友
+  claimRef:
+    namespace: default
+    name: elasticsearch-data-quickstart-es-data-nodes-0
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-quickstart-data-1
+spec:
+  capacity:
+    storage: 1000Gi
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: ""
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: /home/rocky/pv-data #你資料夾的絕對路徑
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values: ["vm0"] #在這裡朋友
+  claimRef:
+    namespace: default
+    name: elasticsearch-data-quickstart-es-data-nodes-1
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-quickstart-data
+spec:
+  capacity:
+    storage: 1000Gi
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: ""
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+  local:
+    path: /home/rocky/pv-data #你資料夾的絕對路徑
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values: ["vm1"] #在這裡朋友
+  claimRef:
+    namespace: default
+    name: elasticsearch-data-quickstart-es-data-nodes-2
+

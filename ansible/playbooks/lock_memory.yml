@@ -1,0 +1,120 @@
+---
+- name: 系統優化設定 (Kubernetes / Elasticsearch)
+  hosts: all
+  become: true
+  vars:
+    memlock_limits:
+      - "* soft   memlock   unlimited"
+      - "* hard   memlock   unlimited"
+    nofile_limits:
+      - "* soft   nofile   65536"
+      - "* hard   nofile   65536"
+    nproc_limits:
+      - "* soft   nproc    4096"
+      - "* hard   nproc    4096"
+    vm_swappiness: 1
+    vm_max_map_count: 262144
+    tcp_retries2: 5
+
+  tasks:
+
+    - name: 設定 memlock 限制
+      lineinfile:
+        path: /etc/security/limits.conf
+        line: "{{ item }}"
+        state: present
+        create: yes
+      loop: "{{ memlock_limits }}"
+
+    - name: 設定 nofile 限制
+      lineinfile:
+        path: /etc/security/limits.conf
+        line: "{{ item }}"
+        state: present
+        create: yes
+      loop: "{{ nofile_limits }}"
+
+    - name: 設定 nproc 限制
+      lineinfile:
+        path: /etc/security/limits.conf
+        line: "{{ item }}"
+        state: present
+        create: yes
+      loop: "{{ nproc_limits }}"
+
+    - name: 立即關閉 swap
+      command: swapoff -a
+
+    - name: 註解 /etc/fstab 中的 swap 設定
+      replace:
+        path: /etc/fstab
+        regexp: '^(.+\sswap\s.+)'
+        replace: '# \1'
+        backup: yes
+
+    - name: 設定 vm.swappiness
+      ansible.posix.sysctl:
+        name: vm.swappiness
+        value: "{{ vm_swappiness }}"
+        state: present
+        reload: yes
+
+    - name: 設定 vm.max_map_count
+      ansible.posix.sysctl:
+        name: vm.max_map_count
+        value: "{{ vm_max_map_count }}"
+        state: present
+        reload: yes
+
+    - name: 設定 net.ipv4.tcp_retries2
+      ansible.posix.sysctl:
+        name: net.ipv4.tcp_retries2
+        value: "{{ tcp_retries2 }}"
+        state: present
+        reload: yes
+
+    # 統一檢查步驟
+    - name: 統一檢查系統設定
+      block:
+        - name: 顯示 limits.conf 最後 15 行
+          shell: tail -n 6 /etc/security/limits.conf
+          register: limits_tail
+          changed_when: false
+
+        - name: 顯示 fstab 中啟用的 swap
+          shell: grep -E '^[^#].*\sswap\s' /etc/fstab || true
+          register: fstab_swap
+          changed_when: false
+
+        - name: 顯示當前 swap 使用量
+          shell: free -h | awk '/^Swap:/ {print $0}'
+          register: swap_usage
+          changed_when: false
+
+        - name: 顯示 vm.swappiness 設定值
+          command: sysctl vm.swappiness
+          register: swappiness
+          changed_when: false
+
+        - name: 顯示 vm.max_map_count 設定值
+          command: sysctl vm.max_map_count
+          register: max_map_count
+          changed_when: false
+
+        - name: 顯示 net.ipv4.tcp_retries2 設定值
+          command: sysctl net.ipv4.tcp_retries2
+          register: tcp_retries2_value
+          changed_when: false
+
+        - name: 輸出 limits.conf 尾端內容
+          debug:
+            var: limits_tail.stdout_lines
+
+        - name: 輸出檢查結果
+          debug:
+            msg:
+              - "fstab 中啟用 swap: {{ fstab_swap.stdout_lines }}"
+              - "當前 swap 使用量: {{ swap_usage.stdout_lines }}"
+              - "vm.swappiness: {{ swappiness.stdout_lines }}"
+              - "vm.max_map_count: {{ max_map_count.stdout_lines }}"
+              - "net.ipv4.tcp_retries2: {{ tcp_retries2_value.stdout_lines }}"

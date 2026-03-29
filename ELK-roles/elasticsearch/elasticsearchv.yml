@@ -1,0 +1,68 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: quickstart
+  namespace: default
+spec:
+  version: 8.19.2
+  # ECK 會自動產生預設的自簽證書，並開啟 HTTPS
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: false
+  
+  nodeSets:
+  # --- 管理節點 (Master Nodes) ---
+  - name: master
+    count: 3
+    config:
+      node.roles: ["master"]
+      # 建議在生產環境開啟 mmap，這需要在宿主機執行 sysctl 命令
+      node.store.allow_mmap: false 
+    podTemplate:
+      spec:
+        containers:
+        - name: elasticsearch
+          resources:
+            requests:
+              cpu: "1"
+              memory: "2Gi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: "" # 請確認你的環境是否有預設 StorageClass
+
+  # # --- 數據節點 (Data Nodes) ---
+  # - name: data
+  #   count: 3
+  #   config:
+  #     node.roles: ["data", "ingest", "ml"]
+  #     node.store.allow_mmap: false
+  #   podTemplate:
+  #     spec:
+  #       containers:
+  #       - name: elasticsearch
+  #         resources:
+  #           requests:
+  #             cpu: "2"
+  #             memory: "4Gi"
+  #           limits:
+  #             cpu: "2"
+  #             memory: "4Gi"
+  #   volumeClaimTemplates:
+  #   - metadata:
+  #       name: elasticsearch-data
+  #     spec:
+  #       accessModes: ["ReadWriteOnce"]
+  #       resources:
+  #         requests:
+  #           storage: 1000Gi
+  #       storageClassName: ""

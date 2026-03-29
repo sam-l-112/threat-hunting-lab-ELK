@@ -1,0 +1,24 @@
+- name: Set up PVC directory
+  hosts: all
+  become: true
+  tasks:
+    - name: Create master PVC directory
+      file:
+        path: /home/rocky/pv-master
+        state: directory
+        owner: 1000
+        group: 1000 
+        mode: '0770'
+        recurse: true
+      # when: inventory_hostname in groups['k3s_server']
+
+    - name: Create data PVC directory
+      file:
+        path: /home/rocky/pv-data
+        state: directory
+        owner: 1000
+        group: 1000
+        mode: '0770'
+        recurse: true
+      # when: inventory_hostname in groups['k3s_agent']
+ 

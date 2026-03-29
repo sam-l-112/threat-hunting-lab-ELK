@@ -1,0 +1,189 @@
+---
+- name: Install k3s and configure kubeconfig
+  hosts: all[0]
+  become: true
+  gather_facts: false
+  vars:
+    ansible_user: rocky
+    # ansible_user: ubuntu
+  tasks:
+    - name: Remove old k3s if exists
+      shell: |
+        if [ -f /usr/local/bin/k3s-uninstall.sh ]; then
+          sudo /usr/local/bin/k3s-uninstall.sh
+          elif [ -f /usr/local/bin/k3s-agent-uninstall.sh ]; then
+          /usr/local/bin/k3s-agent-uninstall.sh
+        fi
+      args:
+        executable: /bin/bash
+      become: yes
+      ignore_errors: yes
+
+    - name: Install k3s using official script
+      shell: curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san {{ ansible_host }} --node-name k3s-master" sh -
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: 檢查 K3s 是否安裝成功並啟動
+      command: systemctl status k3s
+      register: k3s_status
+      failed_when: k3s_status.rc != 0
+      changed_when: false
+      ignore_errors: yes
+
+    - name: 讀取 node-token
+      shell: sudo cat /var/lib/rancher/k3s/server/node-token
+      register: node_token
+      failed_when: node_token.stdout == ""
+
+    # KUBECONFIG 環境變數設定
+    - name: 建立 ~/.k3s 目錄
+      become: false
+      file:
+        path: "/home/{{ ansible_user }}/.k3s"
+        state: directory
+        mode: "0755"
+
+    - name: 設定 /etc/rancher/k3s/k3s.yaml 權限
+      file:
+        path: /etc/rancher/k3s/k3s.yaml
+        mode: "0755"
+      become: true
+
+    - name: 讀取 node-token
+      shell: sudo cat /var/lib/rancher/k3s/server/node-token
+      register: node_token
+      failed_when: node_token.stdout == ""
+      vars:
+        node_token: node_token.stdout
+
+    - name: 複製 kubeconfig 到使用者目錄
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "/home/{{ ansible_user }}/.k3s/k3s.yaml"
+        remote_src: yes
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+
+    - name: Set KUBECONFIG environment variable in .bashrc
+      lineinfile:
+        path: "/home/{{ ansible_user }}/.bashrc"
+        line: 'export KUBECONFIG=$HOME/.k3s/k3s.yaml'
+        state: present
+      become: false 
+
+    - name: Enable kubectl autocompletion in .bashrc
+      lineinfile:
+        path: "/home/{{ ansible_user }}/.bashrc"
+        line: 'source <(kubectl completion bash)'
+        state: present
+      become: false
+
+    - name: Add kubectl alias to .bashrc
+      lineinfile:
+        path: "/home/{{ ansible_user }}/.bashrc"
+        line: 'alias k=kubectl'
+        state: present
+      become: false
+
+    - name: Add kubectl completion for alias k to .bashrc
+      lineinfile:
+        path: "/home/{{ ansible_user }}/.bashrc"
+        line: 'complete -F __start_kubectl k'
+        state: present
+      become: false
+
+
+    - name: Display all pods in all namespaces
+      shell: kubectl get pod -A
+      environment:
+        KUBECONFIG: "/home/{{ ansible_user }}/.k3s/k3s.yaml"
+      register: pods_output
+      changed_when: false
+
+    - name: Install Helm using official script
+      shell: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Add elastic Helm repo
+      shell: helm repo add elastic https://helm.elastic.co
+      args:
+        creates: /home/{{ ansible_user }}/.cache/helm/repository/elastic-index.yaml
+      become: false
+
+    - name: Update Helm repos
+      shell: helm repo update
+      become: false
+
+# Install k3s agent on worker nodes
+# - name: Install k3s agent
+#   hosts: all[1:]  # 使用第二台及之後的機器作為 worker
+#   become: true
+#   gather_facts: false
+#   vars:
+#     ansible_user: rocky
+#     k3s_token: "{{ hostvars[groups['all'][0]].node_token.stdout }}" # 從 k3s server 獲取 token
+#     k3s_server: "{{ groups['all'][0] }}"  # 獲取第一個 k3s server 的 IP | first
+#     # 移除 k3s_agent_ip_1, k3s_agent_ip_2，直接在 debug 用 inventory_hostname
+#   tasks:
+#     - name: Remove old k3s if exists
+#       shell: |
+#         if [ -f /usr/local/bin/k3s-agent-uninstall.sh ]; then
+#           sudo /usr/local/bin/k3s-agent-uninstall.sh
+#         fi
+#       ignore_errors: yes
+
+#     - name: 確認 k3s server 6443 port 是否可連線
+#       shell: curl -ksSfL https://{{ groups['all'][0] }}:6443 || echo "fail"
+#       register: k3s_server_connection
+#       ignore_errors: yes
+
+#     - name: 顯示 worker IP 與 token
+#       debug:
+#         msg: "Worker IP: {{ inventory_hostname }}, Server: {{ k3s_server }}, Token: {{ k3s_token }}"
+
+#     - name: Install k3s agent using official script
+#       shell: |
+#         curl -sfL https://get.k3s.io | K3S_URL="https://{{ k3s_server }}:6443" K3S_TOKEN="{{ k3s_token }}" K3S_NODE_NAME={{ node_name }} sh -
+#       args:
+#         creates: /usr/local/bin/k3s
+#       vars:
+#         node_name: "{{ 'vm1' if ansible_play_hosts.index(inventory_hostname) == 1 else 'vm0' }}"
+
+#     - name: Debug k3s agent IP  
+#       debug:
+#         var: k3s_agent_ip
+
+#     - name: 確認 agent 是否啟動
+#       debug:
+#         msg: "{{ item }} K3s Agent is running"
+#       loop: "{{ groups['all'][1:] }}"  
+
+- name: Install Elastic、Operator、CRDs、Flannel
+  hosts: all[0]
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Install Elastic CRDs  Operator version 3.1.0
+      shell: |
+        kubectl apply -f https://download.elastic.co/downloads/eck/3.1.0/crds.yaml
+        kubectl apply -f https://download.elastic.co/downloads/eck/3.1.0/operator.yaml
+
+    - name: Install Flannel
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+        dest: /root/kube-flannel.yml
+        mode: '0600'
+
+  
+    - name: Change flannel pod CIDR to 10.42.0.0/16
+      ansible.builtin.replace:
+        path: /root/kube-flannel.yml
+        regexp: '"Network": "10\.244\.0\.0/16"'
+        replace: '"Network": "10.42.0.0/16"'
+
+    - name: Apply flannel manifest
+      shell: |
+        kubectl apply -f  /root/kube-flannel.yml
