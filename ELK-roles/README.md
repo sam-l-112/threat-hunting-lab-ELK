@@ -13,3 +13,5 @@ helm install kibana elastic/kibana -f kibana/values.yml
 ---
 # filebat 
 [ELK Stack Tutorial](https://www.youtube.com/watch?v=GLGCJU4nR3M)
+
+[ELK 部署流程](https://hackmd.io/@sam21/Hk6gpgBoZl)
