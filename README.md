@@ -71,7 +71,8 @@
 ---
 # 參考文件
 [ELK 部署流程](https://hackmd.io/@sam21/Hk6gpgBoZl)
-[ELK 部署流程](https://hackmd.io/@sam21/Hk6gpgBoZl)
+
+[CVE 漏洞資訊](https://hackmd.io/@sam21/r1BcalHoWe)
 
 ---
 
