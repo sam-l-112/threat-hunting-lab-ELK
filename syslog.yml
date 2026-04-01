@@ -6,4 +6,5 @@
   
 - import_playbook: /home/rocky/threat-hunting-lab-ELK/ansible/playbooks/install_k3s.yml
 
+- import_playbook: /home/rocky/threat-hunting-lab-ELK/ansible/playbooks/
 # - import_playbook: /home/rocky/threat-hunting-lab-ELK/ansible/playbooks/pvcpath.yml
