@@ -4,7 +4,8 @@
   become: yes
   become_user: root
   
-- import_playbook: /home/rocky/threat-hunting-lab-ELK/ansible/playbooks/install_k3s.yml
+- import_playbook: ./ansible/playbooks/install_k3s.yml
 
-- import_playbook: /home/rocky/threat-hunting-lab-ELK/ansible/playbooks/
+- import_playbook: ./ansible/playbooks/run_elk.yml
+
 # - import_playbook: /home/rocky/threat-hunting-lab-ELK/ansible/playbooks/pvcpath.yml

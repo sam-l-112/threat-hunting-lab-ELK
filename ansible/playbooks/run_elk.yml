@@ -1,0 +1,26 @@
+- name: Deploy ELK Stack via Helm
+  hosts: all
+  gather_facts: false
+  become: true
+  become_user: root
+
+  tasks:
+# elasticsearch 
+    - name: Install Elasticsearch
+      kubernetes.core.helm:
+        name: elasticsearch
+        chart_ref: elastic/elasticsearch
+        release_namespace: default
+        values_files:
+          - "ELK-roles/elasticsearch/values.yml"
+        wait: true
+
+# kibana
+    - name: Install Kibana
+      kubernetes.core.helm:          
+        name: kibana
+        chart_ref: elastic/kibana
+        release_namespace: default
+        values_files:     
+          - "ELK-roles/kibana/values.yml"
+        wait: true
