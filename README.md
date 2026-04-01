@@ -14,7 +14,7 @@
 | 角色 | 節點數量 | 作業系統 | 核心任務 |
 | :--- | :--- | :--- | :--- |
 | **SIEM 核心** | 1 | **Rocky Linux 9** | 運行 ELK Stack (Rocky-ELK-Forge)、日誌解析與告警 |
-| **攻擊端** | 1 | **Kali Linux** | 執行 Nmap 掃描、Hydra 爆破、漏洞利用 (Metasploit) |
+| **攻擊端** | 1 | **Kali Linux** | 執行 Nmap 掃描、Hydra 爆破、漏洞利用 (Metasploit)、zaproxy (黑箱滲透測試)、SQLmap (SQL injection)  |
 | **受控靶機** | 4 | **Win/Linux 混合** | 產生 OS 日誌、服務日誌、網路流量 (Beats 代理) |
 
 ---
