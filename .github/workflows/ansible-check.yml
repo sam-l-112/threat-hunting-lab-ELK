@@ -6,7 +6,7 @@ jobs:
   ansible-check:
     runs-on: ubuntu-latest
     container:
-      image: rockylinux:10  # 指定 Rocky Linux 9 環境
+      image: rockylinux/rockylinux:10  # 指定 Rocky Linux 9 環境
 
     steps:
       - uses: actions/checkout@v4
