@@ -1,0 +1,23 @@
+name: Ansible Check on Rocky Linux
+
+on: [push, pull_request]
+
+jobs:
+  ansible-check:
+    runs-on: ubuntu-latest
+    container:
+      image: rockylinux:10  # 指定 Rocky Linux 9 環境
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          dnf install -y epel-release
+          dnf install -y python3-pip ansible-lint
+
+      - name: Run Syntax Check
+        run: ansible-playbook --syntax-check site.yml
+
+      - name: Run Ansible Lint
+        run: ansible-lint .
