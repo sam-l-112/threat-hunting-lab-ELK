@@ -1,7 +1,6 @@
 # !/bin/bash
 set -e 
 
-OS=""
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     OS=$ID
@@ -9,23 +8,23 @@ else
     echo "無法辦定 Operating system version (/etc/os-release不存在) "
     exit 1
 fi
-
 echo "檢察系統: $OS"
-if
-echo "檢測到系統: $OS"
 
-if [[ "$OS == ubuntu " || "debian" ]]; then
+if [[ "$OS" == "ubuntu " || "$OS" == "debian" ]]; then
     echo "ubuntu/Debian installion procedure "
     sudo apt update -y
     sudo apt install -y ansible tree
+    ansible --version
 
 elif [[ "$OS" == "rocky" || "$OS" == "centos" ]]; then
     echo " Rocky/Rhel/centOS installion procedure "
     sudo dnf makecache -y 
     sudo dnf install -y epel-release
-    sudo dnf install -y ansible tree
+    # sudo dnf install -y ansible tree
+    sudo dnf install -y ansible-core
+    ansible --version
 else
-    echo "沒有支持該系統 : $OS"
+    echo "System not supported : $OS"
     exit 1
 fi
 
