@@ -79,3 +79,8 @@
 # 原生來源
 ## ELK Rocky 
 [Rocky ELK Forge](https://github.com/sam-l-112/Rocky-ELK-Forge) 
+
+------
+# Document
+- debug 問題說明
+[Docs](./Docs/)

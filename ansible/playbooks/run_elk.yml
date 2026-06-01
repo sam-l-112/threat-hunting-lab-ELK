@@ -2,9 +2,14 @@
   hosts: all
   gather_facts: false
   become: true
-  become_user: root
 
   tasks:
+
+    - name: Ensure Elastic Helm repo is added for root
+      shell: /usr/local/bin/helm repo add elastic https://helm.elastic.co
+      args:
+        creates: /root/.config/helm/repositories.yaml
+
 # elasticsearch 
     - name: Install Elasticsearch
       kubernetes.core.helm:
@@ -12,8 +17,15 @@
         chart_ref: elastic/elasticsearch
         release_namespace: default
         values_files:
-          - "ELK-roles/elasticsearch/values.yml"
+          - "../../ELK-roles/elasticsearch/values.yml"
         wait: true
+        wait_timeout: 10m0s
+        binary_path: /usr/local/bin/helm
+        kubeconfig: "{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
+      environment:
+        PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}"
+        # # 強制指向一個固定的目錄，確保不論切換到什麼使用者，都能讀取到同一個 repo 設定
+        # HELM_REPOSITORY_CONFIG: "/tmp/helm-repositories.yaml"
 
 # kibana
     - name: Install Kibana
@@ -22,5 +34,13 @@
         chart_ref: elastic/kibana
         release_namespace: default
         values_files:     
-          - "ELK-roles/kibana/values.yml"
+          - "../../ELK-roles/kibana/values.yml"
         wait: true
+        wait_timeout: 10m0s
+        binary_path: /usr/local/bin/helm
+        binary_path: /usr/local/bin/helm
+        kubeconfig: "{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
+      environment:
+        PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}"
+        # # 強制指向一個固定的目錄，確保不論切換到什麼使用者，都能讀取到同一個 repo 設定
+        # HELM_REPOSITORY_CONFIG: "/tmp/helm-repositories.yaml"
