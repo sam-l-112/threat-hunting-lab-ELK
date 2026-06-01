@@ -6,11 +6,11 @@
   tasks:
 
     - name: Ensure Elastic Helm repo is added for root
-      shell: /usr/local/bin/helm repo add elastic https://helm.elastic.co
-      args:
+      ansible.builtin.command:
+        cmd: /usr/local/bin/helm repo add elastic https://helm.elastic.co
         creates: /root/.config/helm/repositories.yaml
 
-# elasticsearch 
+# elasticsearch
     - name: Install Elasticsearch
       kubernetes.core.helm:
         name: elasticsearch
@@ -29,15 +29,14 @@
 
 # kibana
     - name: Install Kibana
-      kubernetes.core.helm:          
+      kubernetes.core.helm:
         name: kibana
         chart_ref: elastic/kibana
         release_namespace: default
-        values_files:     
+        values_files:
           - "../../ELK-roles/kibana/values.yml"
         wait: true
         wait_timeout: 10m0s
-        binary_path: /usr/local/bin/helm
         binary_path: /usr/local/bin/helm
         kubeconfig: "{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
       environment:

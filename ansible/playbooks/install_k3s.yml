@@ -1,6 +1,6 @@
 ---
 - name: Install k3s and configure kubeconfig
-  hosts: all[0]
+  hosts: all
   become: true
   gather_facts: false
   vars:
@@ -8,57 +8,54 @@
     # ansible_user: ubuntu
   tasks:
     - name: Remove old k3s if exists
-      shell: |
+      ansible.builtin.shell: |
         if [ -f /usr/local/bin/k3s-uninstall.sh ]; then
-          sudo /usr/local/bin/k3s-uninstall.sh
-          elif [ -f /usr/local/bin/k3s-agent-uninstall.sh ]; then
+          /usr/local/bin/k3s-uninstall.sh
+        elif [ -f /usr/local/bin/k3s-agent-uninstall.sh ]; then
           /usr/local/bin/k3s-agent-uninstall.sh
         fi
       args:
         executable: /bin/bash
       become: yes
-      ignore_errors: yes
 
     - name: Install k3s using official script
-      shell: curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san {{ ansible_host }} --node-name k3s-master" sh -
+      ansible.builtin.shell: |
+        set -o pipefail
+        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san {{ ansible_host }} --node-name k3s-master" sh -
       args:
+        executable: /bin/bash
         creates: /usr/local/bin/k3s
 
     - name: 檢查 K3s 是否安裝成功並啟動
-      command: systemctl status k3s
+      ansible.builtin.command:
+        cmd: systemctl status k3s
       register: k3s_status
-      failed_when: k3s_status.rc != 0
       changed_when: false
-      ignore_errors: yes
+      failed_when: false
 
     - name: 讀取 node-token
-      shell: sudo cat /var/lib/rancher/k3s/server/node-token
+      ansible.builtin.command:
+        cmd: cat /var/lib/rancher/k3s/server/node-token
       register: node_token
       failed_when: node_token.stdout == ""
+      become: true
 
     # KUBECONFIG 環境變數設定
     - name: 建立 ~/.k3s 目錄
       become: false
-      file:
+      ansible.builtin.file:
         path: "{{ lookup('env', 'HOME') }}/.k3s"
         state: directory
         mode: "0755"
 
     - name: 設定 /etc/rancher/k3s/k3s.yaml 權限
-      file:
+      ansible.builtin.file:
         path: /etc/rancher/k3s/k3s.yaml
         mode: "0755"
       become: true
 
-    - name: 讀取 node-token
-      shell: sudo cat /var/lib/rancher/k3s/server/node-token
-      register: node_token
-      failed_when: node_token.stdout == ""
-      vars:
-        node_token: node_token.stdout
-
     - name: 複製 kubeconfig 到使用者目錄
-      copy:
+      ansible.builtin.copy:
         src: /etc/rancher/k3s/k3s.yaml
         dest: "{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
         remote_src: yes
@@ -67,28 +64,28 @@
         mode: "0755"
 
     - name: Set KUBECONFIG environment variable in .bashrc
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: "{{ lookup('env', 'HOME') }}/.bashrc"
         line: 'export KUBECONFIG=$HOME/.k3s/k3s.yaml'
         state: present
-      become: false 
+      become: false
 
     - name: Enable kubectl autocompletion in .bashrc
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: "{{ lookup('env', 'HOME') }}/.bashrc"
         line: 'source <(kubectl completion bash)'
         state: present
       become: false
 
     - name: Add kubectl alias to .bashrc
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: "{{ lookup('env', 'HOME') }}/.bashrc"
         line: 'alias k=kubectl'
         state: present
       become: false
 
     - name: Add kubectl completion for alias k to .bashrc
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: "{{ lookup('env', 'HOME') }}/.bashrc"
         line: 'complete -F __start_kubectl k'
         state: present
@@ -96,30 +93,38 @@
 
 
     - name: Display all pods in all namespaces
-      shell: kubectl get pod -A
+      ansible.builtin.command:
+        cmd: kubectl get pod -A
       environment:
         KUBECONFIG: "{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
-        PATH: "/user/local/bin:{{ lookup('env', 'PATH') }}"
+        PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}"
       register: pods_output
       changed_when: false
 
+    - name: Download Helm install script
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        dest: /tmp/get-helm-3
+        mode: '0755'
+
     - name: Install Helm using official script
-      shell: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-      args:
+      ansible.builtin.command:
+        cmd: /bin/bash /tmp/get-helm-3
         creates: /usr/local/bin/helm
 
     - name: Add elastic Helm repo
-      shell: helm repo add elastic https://helm.elastic.co
-      environment:
-        PATH: "/user/local/bin:{{ lookup('env', 'PATH')}}"
-      args:
+      ansible.builtin.command:
+        cmd: /usr/local/bin/helm repo add elastic https://helm.elastic.co
         creates: "{{ lookup('env', 'HOME') }}/.cache/helm/repository/elastic-index.yaml"
+      environment:
+        PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}"
       become: false
 
     - name: Update Helm repos
-      shell: helm repo update
+      ansible.builtin.command:
+        cmd: /usr/local/bin/helm repo update
       environment:
-        PATH: "/user/local/bin:{{ lookup('env', 'PATH')}}"
+        PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}"
       become: false
 
 # Install k3s agent on worker nodes
@@ -157,31 +162,34 @@
 #       vars:
 #         node_name: "{{ 'vm1' if ansible_play_hosts.index(inventory_hostname) == 1 else 'vm0' }}"
 
-#     - name: Debug k3s agent IP  
+#     - name: Debug k3s agent IP
 #       debug:
 #         var: k3s_agent_ip
 
 #     - name: 確認 agent 是否啟動
 #       debug:
 #         msg: "{{ item }} K3s Agent is running"
-#       loop: "{{ groups['all'][1:] }}"  
+#       loop: "{{ groups['all'][1:] }}"
 
 - name: Install Elastic、Operator、CRDs、Flannel
-  hosts: all[0]
+  hosts: all
   become: true
   gather_facts: false
   environment:
-    PATH: "/user/local/bin:{{ lookup('env', 'PATH') }}"
-    KUBECONFIG: "{{ lookup('env', 'HOME)' )}}"
+    PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}"
+    KUBECONFIG: "{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
   tasks:
-    - name: Install Elastic CRDs  Operator version 3.1.0
-      shell: |
-        /usr/local/bin/kubectl apply --kubeconfig="{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml" --validate=false -f https://download.elastic.co/downloads/eck/3.1.0/crds.yaml
-        /usr/local/bin/kubectl apply --kubeconfig="{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml" --validate=false -f https://download.elastic.co/downloads/eck/3.1.0/operator.yaml
+    - name: Install Elastic CRDs
+      ansible.builtin.command:
+        cmd: /usr/local/bin/kubectl apply --kubeconfig="{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml" --validate=false -f https://download.elastic.co/downloads/eck/3.1.0/crds.yaml
+
+    - name: Install Elastic Operator
+      ansible.builtin.command:
+        cmd: /usr/local/bin/kubectl apply --kubeconfig="{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml" --validate=false -f https://download.elastic.co/downloads/eck/3.1.0/operator.yaml
       become: true
 
     - name: Debug KUBECONFIG Path
-      debug:
+      ansible.builtin.debug:
         msg: "Target kubeconfig path is {{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
 
     - name: Install Flannel
@@ -190,7 +198,6 @@
         dest: /root/kube-flannel.yml
         mode: '0600'
 
-  
     - name: Change flannel pod CIDR to 10.42.0.0/16
       ansible.builtin.replace:
         path: /root/kube-flannel.yml
@@ -198,5 +205,5 @@
         replace: '"Network": "10.42.0.0/16"'
 
     - name: Apply flannel manifest
-      shell: |
-        kubectl apply -f  /root/kube-flannel.yml
+      ansible.builtin.command:
+        cmd: kubectl apply -f /root/kube-flannel.yml
