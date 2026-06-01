@@ -3,9 +3,6 @@
   hosts: all
   become: true
   gather_facts: false
-  vars:
-    # ansible_user: zeus
-    # ansible_user: ubuntu
   tasks:
     - name: Remove old k3s if exists
       ansible.builtin.shell: |
@@ -16,7 +13,8 @@
         fi
       args:
         executable: /bin/bash
-      become: yes
+        removes: /usr/local/bin/k3s
+      become: true
 
     - name: Install k3s using official script
       ansible.builtin.shell: |
@@ -38,6 +36,7 @@
         cmd: cat /var/lib/rancher/k3s/server/node-token
       register: node_token
       failed_when: node_token.stdout == ""
+      changed_when: false
       become: true
 
     # KUBECONFIG 環境變數設定
@@ -58,7 +57,7 @@
       ansible.builtin.copy:
         src: /etc/rancher/k3s/k3s.yaml
         dest: "{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
-        remote_src: yes
+        remote_src: true
         owner: "{{ lookup('env', 'USER') }}"
         group: "{{ lookup('env', 'USER') }}"
         mode: "0755"
@@ -125,6 +124,7 @@
         cmd: /usr/local/bin/helm repo update
       environment:
         PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}"
+      changed_when: false
       become: false
 
 # Install k3s agent on worker nodes
@@ -179,14 +179,34 @@
     PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}"
     KUBECONFIG: "{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
   tasks:
-    - name: Install Elastic CRDs
-      ansible.builtin.command:
-        cmd: /usr/local/bin/kubectl apply --kubeconfig="{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml" --validate=false -f https://download.elastic.co/downloads/eck/3.1.0/crds.yaml
+    - name: Download Elastic CRDs manifest
+      ansible.builtin.get_url:
+        url: https://download.elastic.co/downloads/eck/3.1.0/crds.yaml
+        dest: /tmp/eck-crds.yaml
+        mode: '0644'
+        force: false
 
-    - name: Install Elastic Operator
+    - name: Apply Elastic CRDs
       ansible.builtin.command:
-        cmd: /usr/local/bin/kubectl apply --kubeconfig="{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml" --validate=false -f https://download.elastic.co/downloads/eck/3.1.0/operator.yaml
+        cmd: >
+          /usr/local/bin/kubectl apply --kubeconfig="{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
+          --validate=false -f https://download.elastic.co/downloads/eck/3.1.0/crds.yaml
+      changed_when: false
+
+    - name: Download Elastic Operator manifest
+      ansible.builtin.get_url:
+        url: https://download.elastic.co/downloads/eck/3.1.0/operator.yaml
+        dest: /tmp/eck-operator.yaml
+        mode: '0644'
+        force: false
+
+    - name: Apply Elastic Operator
+      ansible.builtin.command:
+        cmd: >
+          /usr/local/bin/kubectl apply --kubeconfig="{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
+          --validate=false -f https://download.elastic.co/downloads/eck/3.1.0/operator.yaml
       become: true
+      changed_when: false
 
     - name: Debug KUBECONFIG Path
       ansible.builtin.debug:
@@ -207,3 +227,4 @@
     - name: Apply flannel manifest
       ansible.builtin.command:
         cmd: kubectl apply -f /root/kube-flannel.yml
+      changed_when: false

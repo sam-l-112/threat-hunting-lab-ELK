@@ -23,7 +23,8 @@
         path: /etc/security/limits.conf
         line: "{{ item }}"
         state: present
-        create: yes
+        create: true
+        mode: '0644'
       loop: "{{ memlock_limits }}"
 
     - name: 設定 nofile 限制
@@ -31,7 +32,8 @@
         path: /etc/security/limits.conf
         line: "{{ item }}"
         state: present
-        create: yes
+        create: true
+        mode: '0644'
       loop: "{{ nofile_limits }}"
 
     - name: 設定 nproc 限制
@@ -39,40 +41,43 @@
         path: /etc/security/limits.conf
         line: "{{ item }}"
         state: present
-        create: yes
+        create: true
+        mode: '0644'
       loop: "{{ nproc_limits }}"
 
     - name: 立即關閉 swap
       ansible.builtin.command:
         cmd: swapoff -a
+      changed_when: false
 
     - name: 註解 /etc/fstab 中的 swap 設定
       ansible.builtin.replace:
         path: /etc/fstab
         regexp: '^(.+\sswap\s.+)'
         replace: '# \1'
-        backup: yes
+        backup: true
+        mode: '0644'
 
     - name: 設定 vm.swappiness
       ansible.posix.sysctl:
         name: vm.swappiness
         value: "{{ vm_swappiness }}"
         state: present
-        reload: yes
+        reload: true
 
     - name: 設定 vm.max_map_count
       ansible.posix.sysctl:
         name: vm.max_map_count
         value: "{{ vm_max_map_count }}"
         state: present
-        reload: yes
+        reload: true
 
     - name: 設定 net.ipv4.tcp_retries2
       ansible.posix.sysctl:
         name: net.ipv4.tcp_retries2
         value: "{{ tcp_retries2 }}"
         state: present
-        reload: yes
+        reload: true
 
     # 統一檢查步驟
     - name: 統一檢查系統設定
