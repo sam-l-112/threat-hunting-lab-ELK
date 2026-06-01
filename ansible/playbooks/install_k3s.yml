@@ -4,7 +4,7 @@
   become: true
   gather_facts: false
   vars:
-    ansible_user: rocky
+    # ansible_user: zeus
     # ansible_user: ubuntu
   tasks:
     - name: Remove old k3s if exists
@@ -40,7 +40,7 @@
     - name: 建立 ~/.k3s 目錄
       become: false
       file:
-        path: "/home/{{ ansible_user }}/.k3s"
+        path: "{{ lookup('env', 'HOME') }}/.k3s"
         state: directory
         mode: "0755"
 
@@ -60,36 +60,36 @@
     - name: 複製 kubeconfig 到使用者目錄
       copy:
         src: /etc/rancher/k3s/k3s.yaml
-        dest: "/home/{{ ansible_user }}/.k3s/k3s.yaml"
+        dest: "{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
         remote_src: yes
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
+        owner: "{{ lookup('env', 'USER') }}"
+        group: "{{ lookup('env', 'USER') }}"
         mode: "0755"
 
     - name: Set KUBECONFIG environment variable in .bashrc
       lineinfile:
-        path: "/home/{{ ansible_user }}/.bashrc"
+        path: "{{ lookup('env', 'HOME') }}/.bashrc"
         line: 'export KUBECONFIG=$HOME/.k3s/k3s.yaml'
         state: present
       become: false 
 
     - name: Enable kubectl autocompletion in .bashrc
       lineinfile:
-        path: "/home/{{ ansible_user }}/.bashrc"
+        path: "{{ lookup('env', 'HOME') }}/.bashrc"
         line: 'source <(kubectl completion bash)'
         state: present
       become: false
 
     - name: Add kubectl alias to .bashrc
       lineinfile:
-        path: "/home/{{ ansible_user }}/.bashrc"
+        path: "{{ lookup('env', 'HOME') }}/.bashrc"
         line: 'alias k=kubectl'
         state: present
       become: false
 
     - name: Add kubectl completion for alias k to .bashrc
       lineinfile:
-        path: "/home/{{ ansible_user }}/.bashrc"
+        path: "{{ lookup('env', 'HOME') }}/.bashrc"
         line: 'complete -F __start_kubectl k'
         state: present
       become: false
@@ -98,7 +98,8 @@
     - name: Display all pods in all namespaces
       shell: kubectl get pod -A
       environment:
-        KUBECONFIG: "/home/{{ ansible_user }}/.k3s/k3s.yaml"
+        KUBECONFIG: "{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
+        PATH: "/user/local/bin:{{ lookup('env', 'PATH') }}"
       register: pods_output
       changed_when: false
 
@@ -109,12 +110,16 @@
 
     - name: Add elastic Helm repo
       shell: helm repo add elastic https://helm.elastic.co
+      environment:
+        PATH: "/user/local/bin:{{ lookup('env', 'PATH')}}"
       args:
-        creates: /home/{{ ansible_user }}/.cache/helm/repository/elastic-index.yaml
+        creates: "{{ lookup('env', 'HOME') }}/.cache/helm/repository/elastic-index.yaml"
       become: false
 
     - name: Update Helm repos
       shell: helm repo update
+      environment:
+        PATH: "/user/local/bin:{{ lookup('env', 'PATH')}}"
       become: false
 
 # Install k3s agent on worker nodes
@@ -165,11 +170,19 @@
   hosts: all[0]
   become: true
   gather_facts: false
+  environment:
+    PATH: "/user/local/bin:{{ lookup('env', 'PATH') }}"
+    KUBECONFIG: "{{ lookup('env', 'HOME)' )}}"
   tasks:
     - name: Install Elastic CRDs  Operator version 3.1.0
       shell: |
-        kubectl apply -f https://download.elastic.co/downloads/eck/3.1.0/crds.yaml
-        kubectl apply -f https://download.elastic.co/downloads/eck/3.1.0/operator.yaml
+        /usr/local/bin/kubectl apply --kubeconfig="{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml" --validate=false -f https://download.elastic.co/downloads/eck/3.1.0/crds.yaml
+        /usr/local/bin/kubectl apply --kubeconfig="{{ lookup('env', 'HOME') }}/.k3s/k3s.yaml" --validate=false -f https://download.elastic.co/downloads/eck/3.1.0/operator.yaml
+      become: true
+
+    - name: Debug KUBECONFIG Path
+      debug:
+        msg: "Target kubeconfig path is {{ lookup('env', 'HOME') }}/.k3s/k3s.yaml"
 
     - name: Install Flannel
       ansible.builtin.get_url:

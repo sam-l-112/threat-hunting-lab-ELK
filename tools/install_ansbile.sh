@@ -13,6 +13,8 @@ echo "檢察系統: $OS"
 if [[ "$OS" == "ubuntu " || "$OS" == "debian" ]]; then
     echo "ubuntu/Debian installion procedure "
     sudo apt update -y
+    sudo apt install -y tree
+    sudo apt install -y python3-pip
     sudo apt install -y ansible tree
     ansible --version
 
@@ -20,14 +22,21 @@ elif [[ "$OS" == "rocky" || "$OS" == "centos" ]]; then
     echo " Rocky/Rhel/centOS installion procedure "
     sudo dnf makecache -y 
     sudo dnf install -y epel-release
+    sudo dnf install -y tree
+    sudo dnf install -y python3-pip
     # sudo dnf install -y ansible tree
     sudo dnf install -y ansible-core
     ansible --version
+
 else
     echo "System not supported : $OS"
     exit 1
 fi
 
+pip3 install kubernetes
+
+# 安裝 Ansible Collections
+ansible-galaxy collection install kubernetes.core
 
 # ubuntu
 # #!/bin/bash
