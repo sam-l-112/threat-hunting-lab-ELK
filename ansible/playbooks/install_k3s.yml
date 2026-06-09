@@ -107,11 +107,17 @@
         mode: '0755'
 
     - name: Install Helm using official script
+      become: yes
+      environment:
+        PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}"
       ansible.builtin.command:
         cmd: /bin/bash /tmp/get-helm-3
         creates: /usr/local/bin/helm
 
     - name: Add elastic Helm repo
+      become: false
+      environment:
+        PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}"
       ansible.builtin.command:
         cmd: /usr/local/bin/helm repo add elastic https://helm.elastic.co
         creates: "{{ lookup('env', 'HOME') }}/.cache/helm/repository/elastic-index.yaml"
