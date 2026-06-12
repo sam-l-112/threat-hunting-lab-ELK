@@ -13,3 +13,5 @@
 [Windows 11 原生安全性日誌直連 Elasticsearch (SIEM 免 Agent 實作)](./Windows%2011%20原生安全性日誌直連%20Elasticsearch%20(SIEM%20免%20Agent%20實作).md)
 
 [ Windows 11 原生安全性日誌直連 Elasticsearch (SIEM 免 Agent 實作)](./Windows%2011%20原生安全性日誌直連%20Elasticsearch%20(SIEM%20免%20Agent%20實作).md)
+
+[Kibana 金鑰配置與故障排除指南 Alert](./Kibana%20金鑰配置與故障排除指南.md)
