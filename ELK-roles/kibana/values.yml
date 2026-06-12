@@ -9,16 +9,16 @@ replicas: 1
 # Extra environment variables to append to this nodeGroup
 # This will be appended to the current 'env:' key. You can use any of the kubernetes env
 # syntax here
-# kibana Alert 
-extraEnvs:
-  - name: "NODE_OPTIONS"
-    value: "--max-old-space-size=1800"
-  - name: "XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY"
-    value: "714a65911095d7a3ef3435e02ed3f58f"
-  - name: "XPACK_REPORTING_ENCRYPTIONKEY"
-    value: "05b3854c9e51a074e0acf39f024c1e5a"
-  - name: "XPACK_SECURITY_ENCRYPTIONKEY"
-    value: "524738a8095c376b18dbf33f80d796a9"
+# kibana Alert setting 煒 
+# extraEnvs:
+#   - name: "NODE_OPTIONS"
+#     value: "--max-old-space-size=1800"
+#   - name: "XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY"
+#     value: "714a65911095d7a3ef3435e02ed3f58f"
+#   - name: "XPACK_REPORTING_ENCRYPTIONKEY"
+#     value: "05b3854c9e51a074e0acf39f024c1e5a"
+#   - name: "XPACK_SECURITY_ENCRYPTIONKEY"
+#     value: "524738a8095c376b18dbf33f80d796a9"
 #  - name: MY_ENVIRONMENT_VAR
 #    value: the_value_goes_here
 
