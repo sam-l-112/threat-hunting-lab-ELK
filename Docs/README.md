@@ -7,3 +7,9 @@
 [Ansible 自動化部署環境優化總結報告](./Ansible%20自動化部署環境優化總結報告.md)
 
 [Ansible 自動化部署與 Kubernetes 除錯實戰手冊](./Ansible%20自動化部署與%20Kubernetes%20除錯實戰手冊.md)
+
+[Kibana Encryption Keys Configuration](./Kibana%20Encryption%20Keys%20Configuration.md)
+
+[Windows 11 原生安全性日誌直連 Elasticsearch (SIEM 免 Agent 實作)](./Windows%2011%20原生安全性日誌直連%20Elasticsearch%20(SIEM%20免%20Agent%20實作).md)
+
+[ Windows 11 原生安全性日誌直連 Elasticsearch (SIEM 免 Agent 實作)](./Windows%2011%20原生安全性日誌直連%20Elasticsearch%20(SIEM%20免%20Agent%20實作).md)

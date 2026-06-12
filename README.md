@@ -85,3 +85,5 @@
 - debug 問題說明
 
 [Docs](./Docs/)
+
+[Additional_information](./Additional_information.md)
