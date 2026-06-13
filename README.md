@@ -87,3 +87,7 @@
 [Docs](./Docs/)
 
 [Additional_information](./Additional_information.md)
+
+---
+# win11
+[winlogbeat win11 log Collection](https://github.com/sam-l-112/winlogbeat-win11-log-Collection)
